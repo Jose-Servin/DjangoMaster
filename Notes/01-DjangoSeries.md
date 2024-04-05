@@ -15,3 +15,7 @@ How to set up your Django Project:
 In simplest terms, a Django project is a collection of apps that each provide a certain functionality.
 
 This is done by running `django-admin startapp {app-name}`.
+
+### Writing Views
+
+In simplest terms, the `Views` directory for each application is a request handler. In here, we define what response should be returned to a user based on their request.
