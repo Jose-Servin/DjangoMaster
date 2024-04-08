@@ -31,3 +31,61 @@ In simplest terms, the `Views` directory for each application is a request handl
 
 1. Find what migration you want to revert to and run `python manage.py migrate {app} {sequence-number}`
 2. Remove all code changes and migration file associated with the migration you just deleted. Use `Git` here to help revert. For example, if you want to go back 1 commit, you can use `git reset --hard HEAD~1`
+
+### Creating empty migrations
+
+1. `python manage.py makemigrations store --empty`
+
+This follows the format `python mange.py makemigrations {app} --empty`
+
+```text
+python manage.py makemigrations store --empty
+
+Migrations for 'store':
+  store/migrations/0005_auto_20240408_1705.py
+```
+
+Define your SQL migration
+
+```python
+from django.db import migrations
+
+
+class Migration(migrations.Migration):
+
+    dependencies = [
+        ("store", "0004_auto_20240408_1703"),
+    ]
+
+    operations = [
+        migrations.RunSQL(
+            """ 
+            INSERT INTO store_collection (title)
+            VALUES ('collection1')
+            """,
+            """ 
+            DELETE FROM store_collection
+            WHERE title='collection1'
+            """
+        )
+    ]
+```
+
+Execute your migration
+
+```terminal
+python manage.py migrate
+
+Operations to perform:
+  Apply all migrations: admin, auth, contenttypes, likes, sessions, store, tags
+Running migrations:
+  Applying store.0003_auto_20240408_1701... OK
+  Applying store.0004_auto_20240408_1703... OK
+  Applying store.0005_auto_20240408_1705... OK
+```
+
+To Undo the custom migration, we follow a similar process:
+
+`python manage.py migrate {app} {sequence-number}`
+
+Remember to refresh our database to view the changes AND delete the migration files from our {app}.
