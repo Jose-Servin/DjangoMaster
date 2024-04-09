@@ -32,7 +32,35 @@ In simplest terms, the `Views` directory for each application is a request handl
 1. Find what migration you want to revert to and run `python manage.py migrate {app} {sequence-number}`
 2. Remove all code changes and migration file associated with the migration you just deleted. Use `Git` here to help revert. For example, if you want to go back 1 commit, you can use `git reset --hard HEAD~1`
 
-### Creating empty migrations
+### Connecting MySQL to Django
+
+1. [Download MySQL](https://dev.mysql.com/downloads/mysql/)
+2. [Download DBeaver](https://dbeaver.io/download/)
+3. Connect to MySQL using DBeaver and `root` user you created.
+4. Execute `CREATE DATABASE storefront;` to create your database - pick whatever name you want.
+
+5. Install the `mysqlclient` package (pip) and the `pkg-config` (brew)
+
+   * See instructions [here](https://pypi.org/project/mysqlclient/)
+
+6. In Django {project} {settings.py} switch the connection to MySQL - remember to NOT push your password.
+
+    ```python
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.mysql",
+            "NAME": "storefront",
+            "HOST": "127.0.0.1",
+            "PORT": "3306",
+            "USER": "root",
+            "PASSWORD": "BLANK"
+        }
+    }
+    ```
+
+7. Execute `python manage.py migrate` - any migrations you have will be applied to your MySQL Database.
+
+### Creating Empty Migrations
 
 1. `python manage.py makemigrations store --empty`
 
