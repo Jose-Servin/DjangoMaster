@@ -60,6 +60,8 @@ In simplest terms, the `Views` directory for each application is a request handl
 
 7. Execute `python manage.py migrate` - any migrations you have will be applied to your MySQL Database.
 
+* [YouTube Video - Connecting MySQL and Django](https://www.youtube.com/watch?v=SNyCV8vOr-g&ab_channel=StudyGyaan)
+
 ### Creating Empty Migrations
 
 1. `python manage.py makemigrations store --empty`

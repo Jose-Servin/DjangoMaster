@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "debug_toolbar",
     "playground",
     "store",
     "tags",
@@ -55,11 +56,11 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
-    "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware"
 ]
 
 INTERNAL_IPS = [
-    "127.0.0.1",
+    '127.0.0.1',
 ]
 
 ROOT_URLCONF = "storefront.urls"
@@ -94,7 +95,7 @@ DATABASES = {
         "HOST": "127.0.0.1",
         "PORT": "3306",
         "USER": "root",
-        "PASSWORD": "BLANK"
+        "PASSWORD": "FOOBAR"
     }
 }
 
