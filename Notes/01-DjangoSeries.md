@@ -169,3 +169,85 @@ query_set = Product.objects.filter(
 ```
 
 ### Referencing Fields using F Objects
+
+[Read the Docs](https://docs.djangoproject.com/en/5.0/ref/models/expressions/#f-expressions)
+
+The scenario we are working on here is "find all products who's inventory = unit_price"
+
+We can't directly reference `unit_price` since the expectation is that we provide a `key-value` pair.
+
+```python
+# not allowed
+query_set = Product.objects.filter(inventory='unit_price')
+```
+
+So instead, we use and `F()` object
+
+```python
+query_set = Product.objects.filter(inventory=F('unit_price'))
+```
+
+In SQL this compiles to
+
+```sql
+SELECT `store_product`.`id`,
+       `store_product`.`title`,
+       `store_product`.`slug`,
+       `store_product`.`description`,
+       `store_product`.`unit_price`,
+       `store_product`.`inventory`,
+       `store_product`.`last_update`,
+       `store_product`.`collection_id`
+  FROM `store_product`
+ WHERE `store_product`.`inventory` = (`store_product`.`unit_price`)
+```
+
+If we change the scenario to now be "Find all products who's inventory is equal to their collection id" using `F()` objects we write
+
+```python
+query_set = Product.objects.filter(inventory=F('collection__id'))
+```
+
+### Selecting Fields to Query
+
+Up to this point, any `query_set` was returning ALL columns from the table we were querying. But now for this example, we are only interested in returning the `id` and `title` of our Products. We achieve this with the `.values()` method.
+
+```python
+query_set = Product.objects.values('id', 'title')
+```
+
+In SQL this compiles to
+
+```SQL
+SELECT `store_product`.`id`,
+       `store_product`.`title`
+  FROM `store_product`
+```
+
+
+We can also go one step further and bring in fields from different models such as `collection__title`
+
+```python
+query_set = Product.objects.values('id', 'title', 'collection__title')
+```
+
+This SQL now contains an `INNER JOIN` in order to bring in this new field. 
+
+```sql
+SELECT `store_product`.`id`,
+       `store_product`.`title`,
+       `store_collection`.`title`
+  FROM `store_product`
+ INNER JOIN `store_collection`
+    ON (`store_product`.`collection_id` = `store_collection`.`id`)
+```
+
+Another key thing to note here is that this action returns a dictionary which contains the `values()` results
+
+```terminal
+{'id': 2, 'title': 'Island Oasis - Raspberry', 'collection__title': 'Beauty'}
+```
+
+### Challenge 1
+
+Select all products that have been ordered and sort them by title.
