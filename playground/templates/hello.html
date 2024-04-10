@@ -5,5 +5,12 @@
     {% else %}
     <h1>Hello World</h1>
     {% endif %}
+    <ul>
+    {% for p in products %}
+      <li>
+      {{p.title}}
+      </li>
+    {% endfor %}
+    </ul>
   </body>
 </html>

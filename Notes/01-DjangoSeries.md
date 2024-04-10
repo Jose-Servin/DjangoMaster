@@ -119,3 +119,53 @@ To Undo the custom migration, we follow a similar process:
 `python manage.py migrate {app} {sequence-number}`
 
 Remember to refresh our database to view the changes AND delete the migration files from our {app}.
+
+## Django ORM
+
+### Complex Lookups using Q Objects
+
+[Read the Docs](https://docs.djangoproject.com/en/5.0/topics/db/queries/#complex-lookups-with-q-objects)
+
+Using Q objects to form an `or` SQL statement. "Find products that have inventory less than 10 OR unit price less than 20."
+
+```python
+query_set = Product.objects.filter(
+        Q(inventory__lt=10) | Q(unit_price__lt=20))
+```
+
+We can see the compiled SQL in the Django Debug Toolbar.
+
+```SQL
+SELECT `store_product`.`id`,
+       `store_product`.`title`,
+       `store_product`.`slug`,
+       `store_product`.`description`,
+       `store_product`.`unit_price`,
+       `store_product`.`inventory`,
+       `store_product`.`last_update`,
+       `store_product`.`collection_id`
+  FROM `store_product`
+ WHERE (`store_product`.`inventory` < 10 OR `store_product`.`unit_price` < 20)
+```
+
+Remember that with `filter()` we can only achieve `AND` condition checks. So this is checking for products with inventory less than 10 AND unit price less than 20. 
+
+```python
+query_set = Product.objects.filter(inventory__lt=10, unit_price__lt=20)
+```
+
+Q objects can also be used for `AND` conditions but they do become a bit verbose. 
+
+```python
+query_set = Product.objects.filter(
+        Q(inventory__lt=10) & Q(unit_price__lt=20))
+```
+
+Or we can negate conditions to say "Find products that have inventory less than 10 and their unit price is NOT less than 20."
+
+```python
+query_set = Product.objects.filter(
+        Q(inventory__lt=10) & ~Q(unit_price__lt=20))
+```
+
+### Referencing Fields using F Objects
