@@ -7,6 +7,7 @@ from store.models import Product, Customer, Collection, Order, OrderItem
 
 def say_hello(request):
     #  query_set are lazy evaluated
-    query_set = Product.objects.values('id', 'title', 'collection__title')
+    query_set = Product.objects.prefetch_related('promotions').all()
+
     res = {'name': 'Mosh', 'products': list(query_set)}
     return render(request, 'hello.html', res)
