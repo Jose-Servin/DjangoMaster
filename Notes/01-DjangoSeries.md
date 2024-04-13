@@ -431,7 +431,7 @@ For example, only using `all()`
 query_set = Product.objects.all()
 ```
 
-But calling `collection.title`
+But calling `collection.title` would negatively affect our performance.
 
 ```html
 <ul>
@@ -443,6 +443,273 @@ But calling `collection.title`
 </ul>
 ```
 
-Would negatively affect our performance.
-
 When there are many relationships such as Product and Promotions we use the `prefetch_related()` method.
+
+In our Model definition this will look like a `models.ManyToManyField(Promotion)` field declaration. So, in order to render a Product and all of its promotions we use `prefetch_related()`.
+
+```python
+query_set = Product.objects.prefetch_related('promotions').all()
+```
+
+This SQL compiles to a 2 step process.
+
+First, we read all products from the `store_product` table and then we use the `id` from this table to filter the `store_promotion`.
+
+```sql
+SELECT `store_product`.`id`,
+       `store_product`.`title`,
+       `store_product`.`slug`,
+       `store_product`.`description`,
+       `store_product`.`unit_price`,
+       `store_product`.`inventory`,
+       `store_product`.`last_update`,
+       `store_product`.`collection_id`
+  FROM `store_product`
+```
+
+```SQL
+SELECT (`store_product_promotions`.`product_id`) AS `_prefetch_related_val_product_id`,
+       `store_promotion`.`id`,
+       `store_promotion`.`description`,
+       `store_promotion`.`discount`
+  FROM `store_promotion`
+ INNER JOIN `store_product_promotions`
+    ON (`store_promotion`.`id` = `store_product_promotions`.`promotion_id`)
+ WHERE `store_product_promotions`.`product_id` IN (1, 2, 3,....)
+```
+
+We can also combine `prefetch_related()` and `select_related()` if we wish to get all Products, their collection and promotions.
+
+```python
+query_set = Product.objects.prefetch_related('promotions').select_related('collection').all()
+```
+
+Since each method returns a query set, we can chain them as such to build complex queries.
+
+### Challenge 2
+
+Get the last 5 orders with their customer and items (incl product).
+
+Step 1: We first get the last 5 orders and their customer.
+
+Step 2: prefetch the orderitem relationship to get access to the product field from OrderItem.
+
+```python
+def say_hello(request):
+
+    recent_orders = Order.objects.select_related(
+        'customer').order_by('-placed_at')[:5]
+    recent_orders = recent_orders.prefetch_related('orderitem_set__product')
+
+    context = {'name': 'Mosh', 'orders': list(recent_orders)}
+
+    return render(request, 'hello.html', context)
+```
+
+To display our results on the frontend, we need to first show all orders and their customer and then for each `orderitem` we display the name of each product that was in that order.
+
+So two for loops are needed to capture the one-to-one relationship between `Order` and `Customer` and one-to-many relationship between `Order` and `OrderItem`.
+
+```html
+<ul>
+    {% for order in orders %}
+      <li>
+      {{order.id}} - {{order.customer.first_name}}
+      <br>
+      {% for order_item in order.orderitem_set.all %}
+          {{ order_item.product.title }}
+      {% endfor %}
+      </li>
+    {% endfor %}
+</ul>
+```
+
+### Django Expression BaseClass
+
+[Read the docs](https://docs.djangoproject.com/en/5.0/ref/models/expressions/#query-expressions)
+
+The following section will look at various Built-in Expressions.
+
+### Aggregating Objects
+
+[Read the Docs](https://docs.djangoproject.com/en/5.0/topics/db/aggregation/)
+
+At a high level, aggregating occurs with various Class instances from the `from django.db.models import` import statement.
+
+Count  the number of Products - for this, we need to make sure we count the primary key, because if we count a field that contains `Nulls` those records won't be counted.
+
+```python
+def say_hello(request):
+    #  query_set are lazy evaluated
+
+    result = Product.objects.aggregate(Count('id'))
+
+    context = {'name': 'Mosh', 'result': result}
+
+    # Render the template with the context data
+    return render(request, 'hello.html', context)
+```
+
+The result from an Aggregate is a dictionary with the column + aggregate function applied as the key name and the result from the aggregate function as the value.
+
+```text
+{'id__count': 1000}
+```
+
+We can provide our own key name by naming the applied aggregate function.
+
+```python
+result = Product.objects.aggregate(my_count=Count('id'))
+```
+
+```text
+{'my_count': 1000}
+```
+
+We can also call several aggregate functions in our `.aggregate()` function to return several metrics. Here, we are finding the count of product Id's and the min unit price of our Products.
+
+```python
+result = Product.objects.aggregate(
+        my_count=Count('id'), min_product_price=Min('unit_price'))
+```
+
+The results are displayed as
+
+```text
+{'my_count': 1000, 'min_product_price': Decimal('1.06')}
+```
+
+If we want to present our data in a nicer way, we can access each value from `result` using dot notation.
+
+```html
+{{results.min_product_price}}
+```
+
+One final note is that Aggregates can be applied to any query set so we can first perform `filter()` operations, apply `JOINS`, traverse relationships and then aggregate our data.
+
+### Aggregate Exercises
+
+How many orders do we have?
+
+```python
+result = Order.objects.aggregate(
+        my_count=Count('id'))
+```
+
+How many units of Product 1 have we sold? - Find all OrderItems that are Product Id = 1 and then sum up the quantity of those OrderItems.
+
+```python
+result = OrderItem.objects.filter(
+        product__id=1).aggregate(units_sold=Sum('quantity'))
+```
+
+How many Orders has Customer 1 placed?
+
+```python
+result = Order.objects.filter(customer__id=1).aggregate(Count('id'))
+```
+
+### Annotating Objects
+
+Annotating Objects: "Add additional attributes to our Objects while querying them."
+
+[Read the Docs](https://docs.djangoproject.com/en/5.0/ref/models/querysets/#annotate)
+
+Adding a new field to Customers called `is_new` to be `True`
+
+```python
+query_set = Customer.objects.annotate(is_new=Value(True))
+```
+
+```SQL
+SELECT `store_customer`.`id`,
+       `store_customer`.`first_name`,
+       `store_customer`.`last_name`,
+       `store_customer`.`email`,
+       `store_customer`.`phone`,
+       `store_customer`.`birth_date`,
+       `store_customer`.`membership`,
+       1 AS `is_new`
+  FROM `store_customer`
+```
+
+### Calling Database Functions
+
+Create a `full_name` field that calls our Database `CONCAT()` function.
+
+```python
+query_set = Customer.objects.annotate(
+        full_name=Func(
+            F('first_name'), Value(" "), F('last_name'),
+            function='CONCAT'
+        )
+    )
+```
+
+```sql
+SELECT `store_customer`.`id`,
+       `store_customer`.`first_name`,
+       `store_customer`.`last_name`,
+       `store_customer`.`email`,
+       `store_customer`.`phone`,
+       `store_customer`.`birth_date`,
+       `store_customer`.`membership`,
+       CONCAT(`store_customer`.`first_name`, ' ', `store_customer`.`last_name`) AS `full_name`
+  FROM `store_customer`
+```
+
+For this specific example we can leverage the `Concat` database function offered by Django.
+
+[Database Function Docs](https://docs.djangoproject.com/en/5.0/ref/models/database-functions/)
+
+```python
+....
+from django.db.models.functions import Concat
+
+
+def say_hello(request):
+    #  query_set are lazy evaluated
+
+    query_set = Customer.objects.annotate(
+        full_name=Concat('first_name', Value(" "), 'last_name')
+    )
+
+    context = {'name': 'Mosh', 'query_set': list(query_set)}
+
+    # Render the template with the context data
+    return render(request, 'hello.html', context)
+```
+
+### Grouping Data
+
+Find the number of orders each Customer has placed.
+
+Note that here, we don't use `order_set` as the variable to count, this would return an error. Instead, we use `order` because that is the field that is available to us....
+
+```text
+Cannot resolve keyword 'order_set' into field. 
+```
+
+```python
+query_set = Customer.objects.annotate(
+        orders_placed=Count('order')
+    )
+```
+
+```sql
+SELECT `store_customer`.`id`,
+       `store_customer`.`first_name`,
+       `store_customer`.`last_name`,
+       `store_customer`.`email`,
+       `store_customer`.`phone`,
+       `store_customer`.`birth_date`,
+       `store_customer`.`membership`,
+       COUNT(`store_order`.`id`) AS `orders_placed`
+  FROM `store_customer`
+  LEFT OUTER JOIN `store_order`
+    ON (`store_customer`.`id` = `store_order`.`customer_id`)
+ GROUP BY `store_customer`.`id`
+ ORDER BY NULL
+```
+
+### Working with Expression Wrapper
