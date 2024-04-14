@@ -713,3 +713,46 @@ SELECT `store_customer`.`id`,
 ```
 
 ### Working with Expression Wrapper
+
+`ExpressionWrapper` surrounds another expression and provides access to properties, such as `output_field`, that may not be available on other expressions. `ExpressionWrapper` is necessary when using arithmetic on `F()` expressions with different types.
+
+Otherwise, we could get the error
+
+```text
+Expression contains mixed types....you must set output_field. 
+```
+
+So, if we want to add a field to our `Product` class called `discounted_price` we mathematically need to take `unit_price` * 0.8. Because `unit_price` is a Decimal Field but 0.8 is a float, we need to use an ExpressionWrapper.
+
+```python
+def say_hello(request):
+    #  query_set are lazy evaluated
+    discounted_price = ExpressionWrapper(
+        F('unit_price') * 0.8, output_field=DecimalField()
+    )
+    query_set = Product.objects.annotate(
+        discounted_price=discounted_price
+    )
+
+    context = {'name': 'Mosh', 'query_set': list(query_set)}
+
+    # Render the template with the context data
+    return render(request, 'hello.html', context)
+```
+
+This SQL compiles to
+
+```SQL
+SELECT `store_product`.`id`,
+       `store_product`.`title`,
+       `store_product`.`slug`,
+       `store_product`.`description`,
+       `store_product`.`unit_price`,
+       `store_product`.`inventory`,
+       `store_product`.`last_update`,
+       `store_product`.`collection_id`,
+       (`store_product`.`unit_price` * 0.8e0) AS `discounted_price`
+  FROM `store_product`
+```
+
+#### Annotating Exercises
