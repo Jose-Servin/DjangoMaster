@@ -757,4 +757,61 @@ SELECT `store_product`.`id`,
 
 #### Annotating Exercises
 
-Review Notes
+1. Customers with their last order ID.
+
+2. Collections and count of their products.
+
+3. Customers with more than 5 orders.
+
+4. Customers and the total amount they’ve spent.
+
+5. Top 5 best-selling products and their total sales.
+
+### Querying Generic Relationships
+
+For this example, we will be looking at the relationship between our `Tag`, `TaggedItem` and `Product` models. Here, we need to remember that our `tags` app is decoupled from the `store` app and subsequent `Product` model. Basically, our `Tag` model has no explicit relationship between the `Product` model.
+
+We did this to ensure that if tomorrow we create an `Article` app, we can reuse our `tags` app and build whatever data relationship we'd like.
+
+We can see this in the code for `TaggedItem` - the `content_type` is of type `ContentType` (Generic).
+
+```python
+class TaggedItem(models.Model):
+    # What tag is applied to what Object
+    tag = models.ForeignKey(Tag, on_delete=models.CASCADE)
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object_id = models.PositiveIntegerField()
+    content_object = GenericForeignKey()
+```
+
+So how do we find the tags of a given Product?
+
+We first start by looking at the `django_content_type` table. This table tells us what models we have in each app. Some are user created and some are Django created. 
+
+|id|app_label|model|
+|--|---------|-----|
+|1|admin|logentry|
+|3|auth|group|
+|2|auth|permission|
+|4|auth|user|
+|5|contenttypes|contenttype|
+|18|likes|likeditem|
+|6|sessions|session|
+|11|store|address|
+|7|store|cart|
+|15|store|cartitem|
+|8|store|collection|
+|9|store|customer|
+|12|store|order|
+|14|store|orderitem|
+|13|store|product|
+|10|store|promotion|
+|16|tags|tag|
+|17|tags|taggeditem|
+
+Next, we look at the `tags_taggeditem` table.
+
+|id|object_id|content_type_id|tag_id|
+|--|---------|---------------|------|
+
+Here we see `content_type_id` is available, which we can use to link `tags` and whatever other model we have. So, if we want to find what taggedItems are Products, we use `content_type_id` = 13.

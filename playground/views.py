@@ -4,6 +4,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from store.models import Product, Customer, Collection, Order, OrderItem
 from django.db.models import Count, Min, Sum, Value, Func, Q, F, ExpressionWrapper, DecimalField, Max
 from django.db.models.functions import Concat
+from django.contrib.contenttypes.models import ContentType
 
 
 def say_hello(request):
