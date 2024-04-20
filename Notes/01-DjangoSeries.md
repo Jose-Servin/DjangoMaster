@@ -169,7 +169,7 @@ query_set = Product.objects.filter(last_update__year=2021)
 Null fields use the `__isnull` field lookup and evaluates to `True` or `False`.
 
 ```python
-query_set = Product.objects.filter(decription__isnull=True)
+query_set = Product.objects.filter(description__isnull=True)
 ```
 
 ### Complex Lookups using Q Objects
@@ -815,3 +815,264 @@ Next, we look at the `tags_taggeditem` table.
 |--|---------|---------------|------|
 
 Here we see `content_type_id` is available, which we can use to link `tags` and whatever other model we have. So, if we want to find what taggedItems are Products, we use `content_type_id` = 13.
+
+So to summarize, the steps are:
+
+1. Query the ContentType table for our `Store.Product` model.
+2. Query the `TaggedItem` table using this found ContentType data.
+3. Use the `tag_id` from `tags.TaggedItems` to join to our `Tags.Tag` model.
+
+Remember: We have to preload the tag using `select_related`. Arriving to the TaggedItem is not the last step because this gives us the TaggedItem, and what we want is what tag it's tagged with.
+
+```python
+def say_hello(request):
+
+    product_content_type = ContentType.objects.get_for_model(Product)
+
+    query_set = TaggedItem.objects \
+        .select_related('tag') \
+        .filter(
+            content_type=product_content_type,
+            object_id=1
+        )
+
+    context = {'name': 'Mosh', 'query_set': list(query_set)}
+
+    # Render the template with the context data
+    return render(request, 'hello.html', context)
+```
+
+### Custom Manager
+
+In this section, we will be improving the code used above by building a custom manager for our `TaggedItem` model that allows us to capture a query set using `TaggedItem.object.get_tags_for({model}, {id})`.
+
+"Custom manager" means we will replace the `object` manager.
+
+In our `tags/models.py` file, we first create our custom manager for out TaggedItems class.
+
+```python
+class TaggedItemManager(models.Manager):
+    def get_tags_for(self, obj_type, obj_id):
+        content_type = ContentType.objects.get_for_model(obj_type)
+
+        query_set = TaggedItem.objects \
+            .select_related('tag') \
+            .filter(
+                content_type=content_type,
+                object_id=obj_id
+            )
+        return query_set
+```
+
+Then, we add this Manager to our TaggedItem model
+
+```python
+class TaggedItem(models.Model):
+    objects = TaggedItemManager()
+```
+
+We can now improve our code in `playground/views.py`.
+
+```python
+def say_hello(request):
+    #  query_set are lazy evaluated
+    query_set = TaggedItem.objects.get_tags_for(Product, 1)
+
+    context = {'name': 'Mosh', 'query_set': list(query_set)}
+
+    # Render the template with the context data
+    return render(request, 'hello.html', context)
+```
+
+### Understanding QuerySet Cache
+
+QuerySet cache has a lot to do with the structure and organization of our code. For example, Django only hits the database when we evaluate `query_set` - remember that's why query sets are considered lazy evaluated.
+
+```python
+query_set = Product.objects.all()
+list(query_set)
+```
+
+After performing this expensive operation, Django will cache our query set in the QuerySet cache. So, if we then evaluate the query again somewhere down our code, we won't hit the database twice.
+
+```python
+query_set = Product.objects.all()
+list(query_set)
+list(query_set)
+```
+
+The same thing happens if we evaluate a single record from the query set. Here, we won't go back to the database and query for the "first" Product, instead the cache is used.
+
+```python
+query_set = Product.objects.all()
+list(query_set)
+query_set[0]
+```
+
+However, the big thing to remember here is that caching only happens when we evaluate the entire query set. If we first evaluate a single record before calling `list(query_set)` then we will hit the database with 2 sql queries.
+
+### Creating Objects
+
+There are 2 ways to create objects. We can use key word arguments or dot notation.
+
+```python
+collection = Collection()
+collection.title = 'Video Games'
+collection.featured_product = Product(pk=1)
+collection.save()
+
+collection = Collection.objects.create(
+    title='Video Games',
+    featured_product_id=1
+)
+```
+
+### Updating Objects
+
+Similar to creating objects, there are 2 ways we can update objects.
+
+For this example, we want to update the "Video Game" collection we just created and rename it to "Games".
+
+```python
+collection = Collection(pk=11)
+collection.title = 'Games'
+collection.featured_product = None
+collection.save()
+```
+
+The code above works with no issues but what if we only want to update the `featured_product` of this Collection?
+
+If we omit the `collection.title` then Django ORM will set this attribute to `NULL` which results in data loss. This happens because by default, the `collection.title` attribute will be set to NULL. Other ORMs have a feature called Change Tracking which is:
+
+```text
+Change tracking is the process of determining what has changed in managed entities since the last time they were synchronized with the database.
+```
+
+So to properly update an object in Django apps, we first have to read the object from the database so we have all of its values in memory. By doing this, we can update individual values without experiencing data loss.
+
+```python
+collection = Collection.objects.get(pk=11)
+collection.featured_product = None
+collection.save()
+```
+
+However, there is some criticism that reading the object first results in performance penalties. We can therefore, use the `Collection.objects.update` method to skip reading the object first.
+
+```python
+# This updates ALL Collection objects featured_product to None
+Collection.objects.update(featured_product=None)
+```
+
+```python
+# This updates ALL Collection objects featured_product to None
+Collection.objects.filter(pk=11).update(featured_product=None)
+```
+
+### Deleting Objects
+
+Single objects can be deleted using the `.delete()` method.
+
+```python
+collection = Collection(pk=11)
+collection.delete()
+```
+
+Query Sets also have a `.delete()` method but here, all objects in our query set get deleted.
+
+```python
+query_set = Collection.objects.filter(id__gt=5)
+query_set.delete()
+```
+
+### Transactions
+
+```text
+In database terminology, an atomic change is an indivisible change—it can succeed entirely or it can fail entirely, but it cannot partly succeed.
+```
+
+"All changes are saved together, or if one change fails we can rollback everything else."
+
+```python
+order = Order()
+order.customer_id = 1
+order.save()
+
+item = OrderItem()
+item.order = order
+item.product_id = 1
+item.quantity = 1
+item.unit_price = 10
+item.save()
+```
+
+If we get an error while performing these actions, our database will be in an inconsistent state. To prevent this, we use the `transaction.atomic` decorator or context manager.
+
+Error we might see: `IntegrityError`
+
+```python
+@transaction.atomic
+def say_hello(request):
+    order = Order()
+    order.customer_id = 1
+    order.save()
+
+    item = OrderItem()
+    item.order = order
+    item.product_id = 1
+    item.quantity = 1
+    item.unit_price = 10
+    item.save()
+```
+
+```python
+
+def say_hello(request):
+    # ... code not related to this atomic transaction
+    with transaction.atomic():
+      order = Order()
+      order.customer_id = 1
+      order.save()
+
+      item = OrderItem()
+      item.order = order
+      item.product_id = 1
+      item.quantity = 1
+      item.unit_price = 10
+      item.save()
+```
+
+### Executing Raw SQL Queries
+
+To execute raw sql queries, we use the manager `raw` method.
+
+```python
+query_set = Product.objects.raw('SELECT * FROM STORE_PRODUCT')
+```
+
+One thing to note is that this query_set object does not have the same methods we've seen above. We can't annotate, filter, get etc.
+
+Therefore, we should only use the `.raw()` approach when we have complicated SQL queries that will result in complex Django ORM statements.
+
+We also have access to the database directly and can bypass the `Models` layer. We do this by using the `cursor()` object that gives us access to run all types of sql queries.
+
+```python
+from django.db import connection
+cursor = connection.cursor()
+cursor.execute('INSERT'...)
+cursor.execute('DELETE'...)
+cursor.execute('SELECT'...)
+# We need to remember to release the allocated resources.
+cursor.close()
+```
+
+Therefore, best practice is to use a context manager. 
+
+```python
+with connection.cursor() as cursor:
+    cursor.execute(...)
+    cursor.callproc('{proc-name}', [1,2,3])
+```
+
+## The Admin Site
+
+### Setting up the Admin Site
