@@ -1065,7 +1065,7 @@ cursor.execute('SELECT'...)
 cursor.close()
 ```
 
-Therefore, best practice is to use a context manager. 
+Therefore, best practice is to use a context manager.
 
 ```python
 with connection.cursor() as cursor:
@@ -1076,3 +1076,17 @@ with connection.cursor() as cursor:
 ## The Admin Site
 
 ### Setting up the Admin Site
+
+The admin app is accessed via the `{url}/admin`.
+
+1. `python manage.py createsuperuser`
+
+2. Enter username and password.
+
+3. Ensure `django.contrib.sessions` is a part of `INSTALLED_APPS`.
+
+4. Ensure you have the `django_session` table in your database. If you don't, add the necessary installed app detailed in step 3 and run `python manage.py migrate`.
+
+You should now be able to visit `{url}/admin` and see the Admin Site.
+
+The Users and Groups w
