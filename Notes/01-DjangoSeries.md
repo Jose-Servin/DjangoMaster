@@ -1089,4 +1089,3 @@ The admin app is accessed via the `{url}/admin`.
 
 You should now be able to visit `{url}/admin` and see the Admin Site.
 
-The Users and Groups w
