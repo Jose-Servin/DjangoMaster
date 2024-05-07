@@ -9,18 +9,9 @@ from tags.models import TaggedItem
 from django.db import transaction
 
 
-@transaction.atomic
 def say_hello(request):
     #  query_set are lazy evaluated
-    collection = Collection()
-    collection.title = 'Video Games'
-    collection.featured_product = Product(pk=1)
-    collection.save()
-
-    collection = Collection.objects.create(
-        title='Video Games',
-        featured_product_id=1
-    )
+    query_set = Product.objects.all()
 
     context = {'name': 'Mosh', 'query_set': list(query_set)}
 
