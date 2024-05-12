@@ -1,5 +1,9 @@
 <html>
   <body>
-    
+      <ul>
+        {% for record in query_set %}
+            <li>{{ record.title }}</li>
+        {% endfor %}
+    </ul>
   </body>
 </html>

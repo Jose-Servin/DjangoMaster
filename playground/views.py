@@ -7,11 +7,12 @@ from django.db.models.functions import Concat
 from django.contrib.contenttypes.models import ContentType
 from tags.models import TaggedItem
 from django.db import transaction
+from django.contrib.auth.models import User
 
 
 def say_hello(request):
     #  query_set are lazy evaluated
-    query_set = Product.objects.all()
+    query_set = users = User.objects.all()
 
     context = {'name': 'Mosh', 'query_set': list(query_set)}
 
