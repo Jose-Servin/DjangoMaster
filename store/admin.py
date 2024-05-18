@@ -1,5 +1,6 @@
 from typing import Any
-from django.contrib import admin
+from django.db import transaction
+from django.contrib import admin, messages
 from django.db.models.query import QuerySet
 from django.db.models import Count
 from django.http import HttpRequest
@@ -22,6 +23,7 @@ class InventoryFilter(admin.SimpleListFilter):
 
 @admin.register(models.Product)
 class ProductAdmin(admin.ModelAdmin):
+    actions = ['clear_inventory']
     list_display = [
         "title",
         "unit_price",
@@ -36,12 +38,25 @@ class ProductAdmin(admin.ModelAdmin):
 
     @admin.display(ordering="inventory")
     def inventory_status(self, product):
+        """Displays inventory status based on the product's inventory level."""
         if product.inventory < 10:
             return "Low"
         return "Ok"
 
     def collection_title(self, product):
+        """Returns the title of the collection to which the product belongs."""
         return product.collection.title
+
+    @admin.action(description='Clear Inventory')
+    def clear_inventory(self, request, queryset):
+        """Bulk action to reset the inventory of selected products to 10."""
+        with transaction.atomic():
+            updated_count = queryset.update(inventory=10)
+            self.message_user(
+                request,
+                f"{updated_count} Products were successfully updated.",
+                messages.SUCCESS
+            )
 
 
 @admin.register(models.Customer)
