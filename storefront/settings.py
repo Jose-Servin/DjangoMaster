@@ -16,8 +16,8 @@ import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-load_dotenv('../dot.env')
-KEY = os.getenv('SECRET_KEY')
+load_dotenv("../dot.env")
+KEY = os.getenv("SECRET_KEY")
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
@@ -41,11 +41,11 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "debug_toolbar",
+    "django_extensions",
     "playground",
     "store",
     "tags",
-    "likes"
-
+    "likes",
 ]
 
 MIDDLEWARE = [
@@ -56,11 +56,11 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
-    "django.middleware.clickjacking.XFrameOptionsMiddleware"
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
 INTERNAL_IPS = [
-    '127.0.0.1',
+    "127.0.0.1",
 ]
 
 ROOT_URLCONF = "storefront.urls"
@@ -86,7 +86,7 @@ WSGI_APPLICATION = "storefront.wsgi.application"
 
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
-MYSQL_ROOT_USER = os.getenv('MYSQL_ROOT_USER')
+MYSQL_ROOT_USER = os.getenv("MYSQL_ROOT_USER")
 
 DATABASES = {
     "default": {
@@ -95,7 +95,7 @@ DATABASES = {
         "HOST": "127.0.0.1",
         "PORT": "3306",
         "USER": "root",
-        "PASSWORD": "FOO#"
+        "PASSWORD": "foo",
     }
 }
 
