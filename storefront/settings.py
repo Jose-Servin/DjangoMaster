@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "django_extensions",
     "playground",
     "store",
+    "store_custom",
     "tags",
     "likes",
 ]
