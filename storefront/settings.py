@@ -14,16 +14,25 @@ from pathlib import Path
 from dotenv import load_dotenv
 import os
 
+# Get the base directory
+base_path = Path()
+basedir = str(base_path.cwd())
+# Load the environment variables
+env = base_path.cwd() / "dot.env"
+load_dotenv(env)
+
+SECRET_KEY = os.getenv("SECRET_KEY")
+DB_PASS = os.getenv("DB_PASS")
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-load_dotenv("../dot.env")
-KEY = os.getenv("SECRET_KEY")
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = f"{KEY}"
+SECRET_KEY = f"{SECRET_KEY}"
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -95,7 +104,7 @@ DATABASES = {
         "HOST": "127.0.0.1",
         "PORT": "3306",
         "USER": "root",
-        "PASSWORD": "foo",
+        "PASSWORD": f"{DB_PASS}",
     }
 }
 

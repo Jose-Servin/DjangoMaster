@@ -9,6 +9,11 @@ from django.utils.html import format_html, urlencode
 from . import models
 
 
+@admin.register(models.Promotion)
+class PromotionAdmin(admin.ModelAdmin):
+    list_display = ["description", "discount"]
+
+
 class InventoryFilter(admin.SimpleListFilter):
     title = "Inventory"
     parameter_name = "inventory"  # this can be anything we want
@@ -23,12 +28,10 @@ class InventoryFilter(admin.SimpleListFilter):
 
 @admin.register(models.Product)
 class ProductAdmin(admin.ModelAdmin):
-    search_fields = ['title']
-    autocomplete_fields = ['collection']
-    prepopulated_fields = {
-        'slug': ['title']
-    }
-    actions = ['clear_inventory']
+    search_fields = ["title"]
+    autocomplete_fields = ["collection"]
+    prepopulated_fields = {"slug": ["title"]}
+    actions = ["clear_inventory"]
     list_display = [
         "title",
         "unit_price",
@@ -52,7 +55,7 @@ class ProductAdmin(admin.ModelAdmin):
         """Returns the title of the collection to which the product belongs."""
         return product.collection.title
 
-    @admin.action(description='Clear Inventory')
+    @admin.action(description="Clear Inventory")
     def clear_inventory(self, request, queryset):
         """Bulk action to reset the inventory of selected products to 10."""
         with transaction.atomic():
@@ -60,7 +63,7 @@ class ProductAdmin(admin.ModelAdmin):
             self.message_user(
                 request,
                 f"{updated_count} Products were successfully updated.",
-                messages.SUCCESS
+                messages.SUCCESS,
             )
 
 
@@ -96,7 +99,7 @@ class CustomerAdmin(admin.ModelAdmin):
 @admin.register(models.Collection)
 class CollectionAdmin(admin.ModelAdmin):
     list_display = ["title", "products_count"]
-    search_fields = ['title']
+    search_fields = ["title"]
 
     @admin.display(ordering="products_count")
     def products_count(self, collection):
@@ -115,7 +118,7 @@ class CollectionAdmin(admin.ModelAdmin):
 
 
 class OrderItemInline(admin.TabularInline):
-    autocomplete_fields = ['product']
+    autocomplete_fields = ["product"]
     model = models.OrderItem
     min_num = 1
     max_num = 10
@@ -124,5 +127,5 @@ class OrderItemInline(admin.TabularInline):
 @admin.register(models.Order)
 class OrderAdmin(admin.ModelAdmin):
     list_display = ["id", "placed_at", "customer"]
-    autocomplete_fields = ['customer']
+    autocomplete_fields = ["customer"]
     inlines = [OrderItemInline]

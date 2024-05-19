@@ -4,7 +4,10 @@ from django.core.validators import MinValueValidator
 
 class Promotion(models.Model):
     description = models.CharField(max_length=255)
-    discount = models.FloatField()
+    discount = models.FloatField(validators=[MinValueValidator(1)])
+
+    def __str__(self) -> str:
+        return self.description
 
 
 class Collection(models.Model):
@@ -25,7 +28,8 @@ class Product(models.Model):
     slug = models.SlugField()
     description = models.TextField()
     unit_price = models.DecimalField(
-        max_digits=6, decimal_places=2, validators=[MinValueValidator(1)])
+        max_digits=6, decimal_places=2, validators=[MinValueValidator(1)]
+    )
     inventory = models.IntegerField()
     last_update = models.DateTimeField(auto_now=True)
     collection = models.ForeignKey(Collection, on_delete=models.PROTECT)
