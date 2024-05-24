@@ -9,11 +9,6 @@ from django.utils.html import format_html, urlencode
 from . import models
 
 
-@admin.register(models.Promotion)
-class PromotionAdmin(admin.ModelAdmin):
-    list_display = ["description", "discount"]
-
-
 class InventoryFilter(admin.SimpleListFilter):
     title = "Inventory"
     parameter_name = "inventory"  # this can be anything we want
@@ -28,7 +23,6 @@ class InventoryFilter(admin.SimpleListFilter):
 
 @admin.register(models.Product)
 class ProductAdmin(admin.ModelAdmin):
-    search_fields = ["title"]
     autocomplete_fields = ["collection"]
     prepopulated_fields = {"slug": ["title"]}
     actions = ["clear_inventory"]
@@ -40,9 +34,14 @@ class ProductAdmin(admin.ModelAdmin):
         "collection_title",
     ]
     list_editable = ["unit_price"]
+    list_filter = ["collection", "last_update", InventoryFilter]
     list_per_page = 10
     list_select_related = ["collection"]
-    list_filter = ["collection", "last_update", InventoryFilter]
+    search_fields = ["title"]
+
+    def collection_title(self, product):
+        """Returns the title of the collection to which the product belongs."""
+        return product.collection.title
 
     @admin.display(ordering="inventory")
     def inventory_status(self, product):
@@ -50,10 +49,6 @@ class ProductAdmin(admin.ModelAdmin):
         if product.inventory < 10:
             return "Low"
         return "Ok"
-
-    def collection_title(self, product):
-        """Returns the title of the collection to which the product belongs."""
-        return product.collection.title
 
     @admin.action(description="Clear Inventory")
     def clear_inventory(self, request, queryset):
@@ -65,6 +60,28 @@ class ProductAdmin(admin.ModelAdmin):
                 f"{updated_count} Products were successfully updated.",
                 messages.SUCCESS,
             )
+
+
+@admin.register(models.Collection)
+class CollectionAdmin(admin.ModelAdmin):
+    autocomplete_fields = ["featured_product"]
+    list_display = ["title", "products_count"]
+    search_fields = ["title"]
+
+    @admin.display(ordering="products_count")
+    def products_count(self, collection):
+        product_changelist_url = (
+            reverse("admin:store_product_changelist")
+            + "?"
+            + urlencode({"collection__id": str(collection.id)})
+        )
+        return format_html(
+            f"<a href='{product_changelist_url}'> {
+                collection.products_count} </a>"
+        )
+
+    def get_queryset(self, request: HttpRequest) -> QuerySet[Any]:
+        return super().get_queryset(request).annotate(products_count=Count("product"))
 
 
 @admin.register(models.Customer)
@@ -94,27 +111,6 @@ class CustomerAdmin(admin.ModelAdmin):
                 orders_count=Count("order")
             )
         )
-
-
-@admin.register(models.Collection)
-class CollectionAdmin(admin.ModelAdmin):
-    list_display = ["title", "products_count"]
-    search_fields = ["title"]
-
-    @admin.display(ordering="products_count")
-    def products_count(self, collection):
-        product_changelist_url = (
-            reverse("admin:store_product_changelist")
-            + "?"
-            + urlencode({"collection__id": str(collection.id)})
-        )
-        return format_html(
-            f"<a href='{product_changelist_url}'> {
-                collection.products_count} </a>"
-        )
-
-    def get_queryset(self, request: HttpRequest) -> QuerySet[Any]:
-        return super().get_queryset(request).annotate(products_count=Count("product"))
 
 
 class OrderItemInline(admin.TabularInline):
