@@ -4,9 +4,14 @@ from decimal import Decimal
 
 
 class CollectionSerializer(serializers.ModelSerializer):
+    product_count = serializers.IntegerField()
+
     class Meta:
         model = Collection
-        fields = ["id", "title"]
+        fields = ["id", "title", "product_count"]
+
+    def get_product_count(self, obj):
+        return obj.product_count
 
 
 class ProductSerializer(serializers.ModelSerializer):
