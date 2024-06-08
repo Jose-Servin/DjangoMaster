@@ -12,7 +12,7 @@ class CollectionSerializer(serializers.ModelSerializer):
 
     def get_product_count(self, collection: Collection):
         # If the annotation is not present, return None or 0
-        return getattr(collection, 'product_count', 0)
+        return getattr(collection, "product_count", 0)
 
 
 class ProductSerializer(serializers.ModelSerializer):
@@ -29,8 +29,7 @@ class ProductSerializer(serializers.ModelSerializer):
             "collection",
         ]
 
-    price_w_tax = serializers.SerializerMethodField(
-        method_name="calculate_tax")
+    price_w_tax = serializers.SerializerMethodField(method_name="calculate_tax")
 
     def calculate_tax(self, product: Product):
         return product.unit_price * Decimal(1.1)

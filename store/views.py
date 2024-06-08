@@ -1,5 +1,7 @@
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework.mixins import ListModelMixin, CreateModelMixin
 from rest_framework import status
 from django.shortcuts import get_object_or_404
 from django.db.models import Count
@@ -7,28 +9,29 @@ from .models import Product, Collection
 from .serializers import CollectionSerializer, ProductSerializer
 
 
-@api_view(["GET", "POST"])
-def product_list(request):
-    if request.method == "GET":
+class ProductList(APIView):
+    def get(self, request):
         query_set = Product.objects.select_related("collection").all()
         serializer = ProductSerializer(
             query_set, many=True, context={"request": request}
         )
         return Response(serializer.data)
-    elif request.method == "POST":
+
+    def post(self, request):
         serializer = ProductSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-@api_view(["GET", "PUT", "DELETE"])
-def product_detail(request, id):
-    product: Product = get_object_or_404(Product, pk=id)
-    if request.method == "GET":
+class ProductDetail(APIView):
+    def get(self, request, pk):
+        product: Product = get_object_or_404(Product, pk=pk)
         serializer = ProductSerializer(product)
         return Response(serializer.data)
-    elif request.method == "PUT":
+
+    def put(self, request, pk):
+        product: Product = get_object_or_404(Product, pk=pk)
         # de-serialize incoming data and provide the product instance we are working on
         serializer = ProductSerializer(product, data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -39,7 +42,9 @@ def product_detail(request, id):
         """
         serializer.save()
         return Response(serializer.data)
-    elif request.method == "DELETE":
+
+    def delete(self, request, pk):
+        product: Product = get_object_or_404(Product, pk=pk)
         if product.orderitems.count() > 0:
             return Response(
                 {
@@ -70,8 +75,9 @@ def collection_list(request):
 
 @api_view(["GET", "PUT", "DELETE"])
 def collection_detail(request, pk):
-    collection = get_object_or_404(Collection.objects.annotate(
-        product_count=Count("product")), pk=pk)
+    collection = get_object_or_404(
+        Collection.objects.annotate(product_count=Count("product")), pk=pk
+    )
     if request.method == "GET":
         serializer = CollectionSerializer(collection)
         return Response(serializer.data)
