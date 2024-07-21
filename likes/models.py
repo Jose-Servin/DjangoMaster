@@ -7,7 +7,7 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 
 
 class LikedItem(models.Model):
-    # If a user is deleted, delete the likes associated with that user
+    # If a user is deleted, delete all object a user has liked as well
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField()

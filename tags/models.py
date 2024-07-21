@@ -27,6 +27,9 @@ class TaggedItem(models.Model):
     objects = TaggedItemManager()
     # What tag is applied to what Object
     tag = models.ForeignKey(Tag, on_delete=models.CASCADE)
+    # If this Object is deleted, delete all associated tags
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    # LIMITATION: we are assuming each Object will have an ID field. This can break if it's a GUID.
     object_id = models.PositiveIntegerField()
+    # This lets us know about the actual object a particular tag is applied to
     content_object = GenericForeignKey()

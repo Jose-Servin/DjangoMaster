@@ -9,6 +9,7 @@ class Promotion(models.Model):
 
 class Collection(models.Model):
     title = models.CharField(max_length=255)
+    # If we delete the featured product of this Collection, set it to Null
     featured_product = models.ForeignKey(
         "Product", on_delete=models.SET_NULL, null=True, related_name="+", blank=True
     )
@@ -29,6 +30,8 @@ class Product(models.Model):
     )
     inventory = models.IntegerField(validators=[MinValueValidator(0)])
     last_update = models.DateTimeField(auto_now=True)
+    # If you delete a Collection, you don't delete all the Products associated with this collection.
+    # You can't delete a Collection if there is a Product associated with it, via Featured_Product
     collection = models.ForeignKey(Collection, on_delete=models.PROTECT)
     promotions = models.ManyToManyField(Promotion, blank=True)
 
@@ -74,20 +77,24 @@ class Order(models.Model):
         (PAYMENT_STATUS_COMPLETE, "Complete"),
         (PAYMENT_STATUS_FAILED, "Failed"),
     ]
-
+    # auto_now_add = True bc we only want to record once and not update this field.
     placed_at = models.DateTimeField(auto_now_add=True)
     payment_status = models.CharField(
         max_length=1, choices=PAYMENT_STATUS_CHOICES, default=PAYMENT_STATUS_PENDING
     )
+    # You cannot delete a Customer if they have associated Orders
     customer = models.ForeignKey(Customer, on_delete=models.PROTECT)
 
 
 class OrderItem(models.Model):
+    # You cannot delete an Order if it has OrderItems
     order = models.ForeignKey(Order, on_delete=models.PROTECT)
+    # models.PROTECT = You cannot delete a Product if it's an OrderItem
     product = models.ForeignKey(
         Product, on_delete=models.PROTECT, related_name="orderitems"
     )
     quantity = models.PositiveSmallIntegerField()
+    # The unit_price of a Product at the time it was ordered
     unit_price = models.DecimalField(max_digits=6, decimal_places=2)
 
 
@@ -102,6 +109,9 @@ class Cart(models.Model):
 
 
 class CartItem(models.Model):
+    # If you delete a Cart, delete the associated CartItem(s)
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE)
+    # If you delete a Product, delete all CartItems that are this Product
+    # Remember, you can only delete a Product if it's not an OrderItem.
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.PositiveSmallIntegerField()
