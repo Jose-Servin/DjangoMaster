@@ -7,8 +7,8 @@ from rest_framework.mixins import ListModelMixin, CreateModelMixin
 from rest_framework import status
 from django.shortcuts import get_object_or_404
 from django.db.models import Count
-from .models import OrderItem, Product, Collection
-from .serializers import CollectionSerializer, ProductSerializer
+from .models import OrderItem, Product, Collection, Review
+from .serializers import CollectionSerializer, ProductSerializer, ReviewSerializer
 
 
 class ProductViewSet(ModelViewSet):
@@ -45,3 +45,13 @@ class CollectionViewSet(ModelViewSet):
                 status=status.HTTP_403_FORBIDDEN,
             )
         return super().destroy(request, *args, **kwargs)
+
+
+class ReviewViewSet(ModelViewSet):
+    serializer_class = ReviewSerializer
+
+    def get_queryset(self):
+        return Review.objects.filter(product_id=self.kwargs['product_pk'])
+
+    def get_serializer_context(self):
+        return {'product_id': self.kwargs['product_pk']}

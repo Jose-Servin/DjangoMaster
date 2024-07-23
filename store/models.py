@@ -115,3 +115,14 @@ class CartItem(models.Model):
     # Remember, you can only delete a Product if it's not an OrderItem.
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.PositiveSmallIntegerField()
+
+
+class Review(models.Model):
+    # If you delete a Product, delete all associated reviews as well.
+    # Product models will have a .reviews attribute not a .review_set
+    product = models.ForeignKey(
+        Product, on_delete=models.CASCADE, related_name="reviews"
+    )
+    name = models.CharField(max_length=255)
+    description = models.TextField()
+    date = models.DateField(auto_now_add=True)
