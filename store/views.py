@@ -10,18 +10,14 @@ from django.db.models import Count
 from .models import OrderItem, Product, Collection, Review
 from .serializers import CollectionSerializer, ProductSerializer, ReviewSerializer
 from django_filters.rest_framework import DjangoFilterBackend
+from .filters import ProductFilter
 
 
 class ProductViewSet(ModelViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
-
-    def get_queryset(self):
-        queryset = Product.objects.all()
-        collection_id = self.request.query_params.get('collection_id')
-        if collection_id is not None:
-            queryset = queryset.filter(collection_id=collection_id)
-        return queryset
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = ProductFilter
 
     def get_serializer_context(self):
         return {"request": self.request}
@@ -59,7 +55,7 @@ class ReviewViewSet(ModelViewSet):
     serializer_class = ReviewSerializer
 
     def get_queryset(self):
-        return Review.objects.filter(product_id=self.kwargs['product_pk'])
+        return Review.objects.filter(product_id=self.kwargs["product_pk"])
 
     def get_serializer_context(self):
-        return {'product_id': self.kwargs['product_pk']}
+        return {"product_id": self.kwargs["product_pk"]}
