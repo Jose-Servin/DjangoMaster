@@ -1,19 +1,29 @@
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.viewsets import ModelViewSet
+from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.mixins import ListModelMixin, CreateModelMixin
 from rest_framework import status
 from django.shortcuts import get_object_or_404
 from django.db.models import Count
-from .models import OrderItem, Product, Collection, Review
-from .serializers import CollectionSerializer, ProductSerializer, ReviewSerializer
+from .models import Cart, OrderItem, Product, Collection, Review
+from .serializers import (
+    CartSerializer,
+    CollectionSerializer,
+    ProductSerializer,
+    ReviewSerializer,
+)
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.pagination import PageNumberPagination
 from .filters import ProductFilter
 from .pagination import StandardResultsSetPagination
+
+
+class CartViewSet(CreateModelMixin, GenericViewSet):
+    queryset = Cart.objects.all()
+    serializer_class = CartSerializer
 
 
 class ProductViewSet(ModelViewSet):

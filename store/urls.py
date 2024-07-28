@@ -9,13 +9,12 @@ router = routers.DefaultRouter()
 # Products end point should be managed by the ProductViewSet
 router.register("products", views.ProductViewSet, basename="products")
 router.register("collections", views.CollectionViewSet)
+router.register("carts", views.CartViewSet)
 
 # Product Nested Router
-products_router = routers.NestedDefaultRouter(
-    router, "products", lookup="product")
+products_router = routers.NestedDefaultRouter(router, "products", lookup="product")
 
 # Child Router of Product
-products_router.register("reviews", views.ReviewViewSet,
-                         basename="product-reviews")
+products_router.register("reviews", views.ReviewViewSet, basename="product-reviews")
 
 urlpatterns = router.urls + products_router.urls

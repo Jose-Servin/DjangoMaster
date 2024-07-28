@@ -112,8 +112,7 @@ class Cart(models.Model):
 
 class CartItem(models.Model):
     # If you delete a Cart, delete the associated CartItem(s)
-    cart = models.ForeignKey(
-        Cart, on_delete=models.CASCADE, related_name="items")
+    cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name="items")
     # If you delete a Product, delete all CartItems that are this Product
     # Remember, you can only delete a Product if it's not an OrderItem.
     product = models.ForeignKey(Product, on_delete=models.CASCADE)

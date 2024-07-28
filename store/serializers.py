@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Product, Collection, Review
+from .models import Cart, Product, Collection, Review
 from decimal import Decimal
 
 
@@ -29,8 +29,7 @@ class ProductSerializer(serializers.ModelSerializer):
             "collection",
         ]
 
-    price_w_tax = serializers.SerializerMethodField(
-        method_name="calculate_tax")
+    price_w_tax = serializers.SerializerMethodField(method_name="calculate_tax")
 
     def calculate_tax(self, product: Product):
         return product.unit_price * Decimal(1.1)
@@ -44,3 +43,13 @@ class ReviewSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         product_id = self.context["product_id"]
         return Review.objects.create(product_id=product_id, **validated_data)
+
+
+class CartSerializer(serializers.ModelSerializer):
+    id = serializers.UUIDField(read_only=True)
+
+    class Meta:
+        model = Cart
+        # Server returns these field to the Client
+        # Client sends these fields to the Server
+        fields = ["id"]
