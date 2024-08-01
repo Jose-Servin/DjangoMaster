@@ -3,11 +3,16 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
-from rest_framework.mixins import ListModelMixin, CreateModelMixin, RetrieveModelMixin
+from rest_framework.mixins import (
+    ListModelMixin,
+    CreateModelMixin,
+    RetrieveModelMixin,
+    DestroyModelMixin,
+)
 from rest_framework import status
 from django.shortcuts import get_object_or_404
 from django.db.models import Count
-from .models import Cart, OrderItem, Product, Collection, Review
+from .models import Cart, CartItem, OrderItem, Product, Collection, Review
 from .serializers import (
     CartSerializer,
     CollectionSerializer,
@@ -52,7 +57,9 @@ class CollectionViewSet(ModelViewSet):
         return {"request": self.request}
 
     def destroy(self, request, *args, **kwargs):
-        if Product.objects.filter(collection_id=kwargs["pk"]).count() > 0:
+        collection_id = kwargs["pk"]
+        # Are there any Products in this Collection?
+        if Product.objects.filter(collection_id=collection_id).exists():
             return Response(
                 {
                     "error": "Collection cannot be deleted because it's associated with a Product."
@@ -72,6 +79,19 @@ class ReviewViewSet(ModelViewSet):
         return {"product_id": self.kwargs["product_pk"]}
 
 
-class CartViewSet(CreateModelMixin, RetrieveModelMixin, GenericViewSet):
+class CartViewSet(
+    CreateModelMixin, RetrieveModelMixin, DestroyModelMixin, GenericViewSet
+):
     queryset = Cart.objects.prefetch_related("items__product").all()
     serializer_class = CartSerializer
+
+    def destroy(self, request, *args, **kwargs):
+        cart_id = kwargs["pk"]
+        # Are there any items in this Cart?
+        if CartItem.objects.filter(cart_id=cart_id).exists():
+            return Response(
+                {"error": "Cart cannot be deleted because it contains items."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        return super().destroy(request, *args, **kwargs)

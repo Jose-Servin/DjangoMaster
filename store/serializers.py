@@ -29,8 +29,7 @@ class ProductSerializer(serializers.ModelSerializer):
             "collection",
         ]
 
-    price_w_tax = serializers.SerializerMethodField(
-        method_name="calculate_tax")
+    price_w_tax = serializers.SerializerMethodField(method_name="calculate_tax")
 
     def calculate_tax(self, product: Product):
         return product.unit_price * Decimal(1.1)
@@ -56,7 +55,7 @@ class CartItemSerializer(serializers.ModelSerializer):
     product = SimpleProductSerializer()
     total_price = serializers.SerializerMethodField()
 
-    # must follow the get_ naming convention
+    # must follow the get_<field-name> naming convention
     def get_total_price(self, cartItem: CartItem):
         return cartItem.quantity * cartItem.product.unit_price
 
@@ -67,7 +66,8 @@ class CartItemSerializer(serializers.ModelSerializer):
 
 class CartSerializer(serializers.ModelSerializer):
     id = serializers.UUIDField(read_only=True)
-    items = CartItemSerializer(many=True)
+    # we don't need to send this to the Server to create a Cart
+    items = CartItemSerializer(many=True, read_only=True)
     total_price = serializers.SerializerMethodField()
 
     def get_total_price(self, cart: Cart):
