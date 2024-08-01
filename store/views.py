@@ -84,14 +84,3 @@ class CartViewSet(
 ):
     queryset = Cart.objects.prefetch_related("items__product").all()
     serializer_class = CartSerializer
-
-    def destroy(self, request, *args, **kwargs):
-        cart_id = kwargs["pk"]
-        # Are there any items in this Cart?
-        if CartItem.objects.filter(cart_id=cart_id).exists():
-            return Response(
-                {"error": "Cart cannot be deleted because it contains items."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-
-        return super().destroy(request, *args, **kwargs)
