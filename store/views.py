@@ -14,10 +14,12 @@ from django.shortcuts import get_object_or_404
 from django.db.models import Count
 from .models import Cart, CartItem, OrderItem, Product, Collection, Review
 from .serializers import (
+    CartItemSerializer,
     CartSerializer,
     CollectionSerializer,
     ProductSerializer,
     ReviewSerializer,
+    SimpleProductSerializer,
 )
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
@@ -84,3 +86,13 @@ class CartViewSet(
 ):
     queryset = Cart.objects.prefetch_related("items__product").all()
     serializer_class = CartSerializer
+
+
+class CartItemViewSet(ModelViewSet):
+    # inherit from ModelViewSet to support all CRUD operations
+    serializer_class = CartItemSerializer
+
+    def get_queryset(self):
+        return CartItem.objects.filter(cart_id=self.kwargs["cart_pk"]).select_related(
+            "product"
+        )
