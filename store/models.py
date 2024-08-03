@@ -116,7 +116,7 @@ class CartItem(models.Model):
     # If you delete a Product, delete all CartItems that are this Product
     # Remember, you can only delete a Product if it's not an OrderItem.
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
-    quantity = models.PositiveSmallIntegerField()
+    quantity = models.PositiveSmallIntegerField(validators=[MinValueValidator(1)])
 
     class Meta:
         unique_together = [["cart", "product"]]
