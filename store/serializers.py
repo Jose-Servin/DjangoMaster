@@ -96,6 +96,12 @@ class AddCartItemSerializer(serializers.ModelSerializer):
         fields = ["id", "product_id", "quantity"]
 
 
+class UpdateCartItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CartItem
+        fields = ["quantity"]
+
+
 class CartSerializer(serializers.ModelSerializer):
     id = serializers.UUIDField(read_only=True)
     # we don't need to send this to the Server to create a Cart

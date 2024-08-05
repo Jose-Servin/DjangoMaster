@@ -21,6 +21,7 @@ from .serializers import (
     ProductSerializer,
     ReviewSerializer,
     SimpleProductSerializer,
+    UpdateCartItemSerializer,
 )
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
@@ -91,9 +92,13 @@ class CartViewSet(
 
 # inherit from ModelViewSet to support all CRUD operations
 class CartItemViewSet(ModelViewSet):
+    http_method_names = ["get", "post", "patch", "delete"]
+
     def get_serializer_class(self):
         if self.request.method == "POST":
             return AddCartItemSerializer
+        elif self.request.method == "PATCH":
+            return UpdateCartItemSerializer
         return CartItemSerializer
 
     def get_queryset(self):
