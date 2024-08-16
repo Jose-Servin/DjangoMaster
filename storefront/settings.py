@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "debug_toolbar",
     "django_extensions",
+    "djoser",
     "playground",
     "store",
     "tags",
@@ -152,6 +153,17 @@ STATIC_URL = "static/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-REST_FRAMEWORK = {"COERCE_DECIMAL_TO_STRING": False}
+REST_FRAMEWORK = {
+    "COERCE_DECIMAL_TO_STRING": False,
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ),
+}
+
+SIMPLE_JWT = {
+    "AUTH_HEADER_TYPES": ("JWT",),
+}
 
 AUTH_USER_MODEL = "core.User"
+
+DJOSER = {"SERIALIZERS": {"user_create": "core.serializers.UserCreateSerializer"}}
