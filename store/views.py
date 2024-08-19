@@ -8,16 +8,18 @@ from rest_framework.mixins import (
     CreateModelMixin,
     RetrieveModelMixin,
     DestroyModelMixin,
+    UpdateModelMixin,
 )
 from rest_framework import status
 from django.shortcuts import get_object_or_404
 from django.db.models import Count
-from .models import Cart, CartItem, OrderItem, Product, Collection, Review
+from .models import Cart, CartItem, Customer, OrderItem, Product, Collection, Review
 from .serializers import (
     AddCartItemSerializer,
     CartItemSerializer,
     CartSerializer,
     CollectionSerializer,
+    CustomerSerializer,
     ProductSerializer,
     ReviewSerializer,
     SimpleProductSerializer,
@@ -211,3 +213,20 @@ class CartItemViewSet(ModelViewSet):
             dict: The context dictionary to pass to the serializer.
         """
         return {"cart_id": self.kwargs["cart_pk"]}
+
+
+class CustomerViewSet(
+    CreateModelMixin, RetrieveModelMixin, UpdateModelMixin, GenericViewSet
+):
+    """
+    A viewset for viewing and editing customer instances.
+
+    Supports GET, POST, PATCH, and DELETE HTTP methods.
+
+    Attributes:
+        queryset (QuerySet): The queryset of customer objects used for retrieving and editing.
+        serializer_class (Serializer): The serializer class used for serializing and deserializing customer data.
+    """
+
+    queryset = Customer.objects.all()
+    serializer_class = CustomerSerializer

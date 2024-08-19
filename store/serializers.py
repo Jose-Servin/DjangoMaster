@@ -1,7 +1,9 @@
 from rest_framework import serializers
 from django.db.models import Sum, F
-from .models import Cart, Product, Collection, Review, CartItem
+from .models import Cart, Customer, Product, Collection, Review, CartItem
 from decimal import Decimal
+from django.conf import settings
+from django.contrib.auth import get_user_model
 
 
 class CollectionSerializer(serializers.ModelSerializer):
@@ -260,3 +262,27 @@ class CartSerializer(serializers.ModelSerializer):
     class Meta:
         model = Cart
         fields = ["id", "items", "total_price"]
+
+
+class CustomerSerializer(serializers.ModelSerializer):
+    """
+    Serializer for the Customer model.
+
+    Includes basic customer details and a reference to the associated user.
+
+    Attributes:
+        id (IntegerField): The unique identifier for the customer.
+        user_id (PrimaryKeyRelatedField): The ID of the user associated with this customer.
+        phone (CharField): The phone number of the customer.
+        birth_date (DateField): The birth date of the customer.
+        membership (CharField): The membership level of the customer (Bronze, Silver, Gold).
+    """
+
+    user_id = serializers.PrimaryKeyRelatedField(
+        queryset=get_user_model().objects.all(),  # Use get_user_model() to get the actual User model class
+        source="user",  # Maps user_id to the user field in the Customer model
+    )
+
+    class Meta:
+        model = Customer
+        fields = ["id", "user_id", "phone", "birth_date", "membership"]
