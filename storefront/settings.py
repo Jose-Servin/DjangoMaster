@@ -13,6 +13,8 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 from pathlib import Path
 from dotenv import load_dotenv
 import os
+from datetime import timedelta
+
 
 # Get the base directory
 base_path = Path()
@@ -167,3 +169,5 @@ SIMPLE_JWT = {
 AUTH_USER_MODEL = "core.User"
 
 DJOSER = {"SERIALIZERS": {"user_create": "core.serializers.UserCreateSerializer"}}
+
+SIMPLE_JWT = {"ACCESS_TOKEN_LIFETIME": timedelta(days=1)}
