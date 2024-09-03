@@ -278,10 +278,7 @@ class CustomerSerializer(serializers.ModelSerializer):
         membership (CharField): The membership level of the customer (Bronze, Silver, Gold).
     """
 
-    user_id = serializers.PrimaryKeyRelatedField(
-        queryset=get_user_model().objects.all(),  # Use get_user_model() to get the actual User model class
-        source="user",  # Maps user_id to the user field in the Customer model
-    )
+    user_id = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Customer
