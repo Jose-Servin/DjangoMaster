@@ -14,6 +14,11 @@ from rest_framework.mixins import (
 from rest_framework import status
 from django.shortcuts import get_object_or_404
 from django.db.models import Count
+from .permissions import (
+    IsAdminOrReadOnly,
+    FullDjangoModelPermissions,
+    ViewCustomerHistoryPermission,
+)
 from .models import Cart, CartItem, Customer, OrderItem, Product, Collection, Review
 from .serializers import (
     AddCartItemSerializer,
@@ -28,6 +33,11 @@ from .serializers import (
 )
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
+from rest_framework.permissions import (
+    IsAuthenticated,
+    IsAdminUser,
+    DjangoModelPermissions,
+)
 from rest_framework.pagination import PageNumberPagination
 from .filters import ProductFilter
 from .pagination import StandardResultsSetPagination
@@ -54,6 +64,7 @@ class ProductViewSet(ModelViewSet):
     pagination_class = StandardResultsSetPagination
     search_fields = ["title", "description"]
     ordering_fields = ["unit_price", "last_update"]
+    permission_classes = [IsAdminOrReadOnly]
 
     def get_serializer_context(self):
         """
@@ -94,6 +105,7 @@ class CollectionViewSet(ModelViewSet):
 
     queryset = Collection.objects.annotate(product_count=Count("product"))
     serializer_class = CollectionSerializer
+    permission_classes = [IsAdminOrReadOnly]
 
     def get_serializer_context(self):
         """
@@ -216,9 +228,7 @@ class CartItemViewSet(ModelViewSet):
         return {"cart_id": self.kwargs["cart_pk"]}
 
 
-class CustomerViewSet(
-    CreateModelMixin, RetrieveModelMixin, UpdateModelMixin, GenericViewSet
-):
+class CustomerViewSet(ModelViewSet):
     """
     A viewset for viewing and editing customer instances.
 
@@ -231,8 +241,13 @@ class CustomerViewSet(
 
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializer
+    permission_classes = [IsAdminUser]
 
-    @action(detail=False, methods=["GET", "PUT"])
+    @action(detail=True, permission_classes=[ViewCustomerHistoryPermission])
+    def history(self, request, pk):
+        return Response("Ok")
+
+    @action(detail=False, methods=["GET", "PUT"], permission_classes=[IsAuthenticated])
     def me(self, request):
         (customer, created) = Customer.objects.get_or_create(user_id=request.user.id)
         if request.method == "GET":
