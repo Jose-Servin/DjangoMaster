@@ -19,7 +19,16 @@ from .permissions import (
     FullDjangoModelPermissions,
     ViewCustomerHistoryPermission,
 )
-from .models import Cart, CartItem, Customer, OrderItem, Product, Collection, Review
+from .models import (
+    Cart,
+    CartItem,
+    Customer,
+    OrderItem,
+    Product,
+    Collection,
+    Review,
+    Order,
+)
 from .serializers import (
     AddCartItemSerializer,
     CartItemSerializer,
@@ -30,6 +39,9 @@ from .serializers import (
     ReviewSerializer,
     SimpleProductSerializer,
     UpdateCartItemSerializer,
+    OrderSerializer,
+    CreateOrderSerializer,
+    UpdateOrderSerializer,
 )
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
@@ -249,7 +261,7 @@ class CustomerViewSet(ModelViewSet):
 
     @action(detail=False, methods=["GET", "PUT"], permission_classes=[IsAuthenticated])
     def me(self, request):
-        (customer, created) = Customer.objects.get_or_create(user_id=request.user.id)
+        customer = Customer.objects.get(user_id=request.user.id)
         if request.method == "GET":
             serializer = CustomerSerializer(customer)
             return Response(serializer.data)
@@ -258,3 +270,52 @@ class CustomerViewSet(ModelViewSet):
             serializer.is_valid(raise_exception=True)
             serializer.save()
             return Response(serializer.data)
+
+
+class OrderViewSet(ModelViewSet):
+    """
+    A viewset for viewing and editing order instances.
+
+    Supports GET, POST, PATCH, and DELETE HTTP methods.
+
+    Attributes:
+        serializer_class (Serializer): The serializer class used for serializing and deserializing order data.
+        permission_classes (list): The list of permission classes that determine access control.
+    """
+
+    http_method_names = ["get", "post", "patch", "delete", "head", "options"]
+
+    def get_permissions(self):
+        """
+        Returns the list of permissions that determine access control.
+
+        Returns:
+            list: The list of permission classes.
+        """
+        if self.request.method in ["PATCH", "DELETE"]:
+            return [IsAdminUser()]
+        return [IsAuthenticated()]
+
+    def create(self, request, *args, **kwargs):
+        create_serializer = CreateOrderSerializer(
+            data=request.data, context={"user_id": self.request.user.id}
+        )
+        create_serializer.is_valid(raise_exception=True)
+        order = create_serializer.save()
+        response_serializer = OrderSerializer(order)
+        return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+
+    def get_serializer_class(self):
+        if self.request.method == "POST":
+            return CreateOrderSerializer
+        elif self.request.method == "PATCH":
+            return UpdateOrderSerializer
+        return OrderSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_staff:
+            return Order.objects.all()
+
+        customer_id = Customer.objects.get(user_id=user.id)
+        return Order.objects.filter(customer_id=customer_id).order_by("placed_at")

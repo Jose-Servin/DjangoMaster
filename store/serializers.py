@@ -1,9 +1,22 @@
+from os import read
+from turtle import mode
 from rest_framework import serializers
 from django.db.models import Sum, F
-from .models import Cart, Customer, Product, Collection, Review, CartItem
+from .models import (
+    Cart,
+    Customer,
+    OrderItem,
+    Product,
+    Collection,
+    Review,
+    CartItem,
+    Order,
+)
+from .signals import order_created
 from decimal import Decimal
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.db import transaction
 
 
 class CollectionSerializer(serializers.ModelSerializer):
@@ -283,3 +296,79 @@ class CustomerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Customer
         fields = ["id", "user_id", "phone", "birth_date", "membership"]
+
+
+class OrderItemSerializer(serializers.ModelSerializer):
+    product = SimpleProductSerializer()
+
+    class Meta:
+        model = OrderItem
+        fields = ["id", "product", "unit_price", "quantity"]
+
+
+class OrderSerializer(serializers.ModelSerializer):
+    items = OrderItemSerializer(many=True)
+
+    class Meta:
+        model = Order
+        fields = ["id", "customer", "placed_at", "payment_status", "items"]
+
+
+class CreateOrderSerializer(serializers.Serializer):
+
+    cart_id = serializers.UUIDField()
+
+    def validate_cart_id(self, value):
+        """
+        Validates that the provided cart ID exists.
+
+        Args:
+            value (UUID): The cart ID.
+
+        Raises:
+            serializers.ValidationError: If no cart with the given ID exists.
+
+        Returns:
+            UUID: The validated cart ID.
+        """
+        if not Cart.objects.filter(pk=value).exists():
+            raise serializers.ValidationError("No cart with the given ID exists.")
+        if CartItem.objects.filter(cart_id=value).count() == 0:
+            raise serializers.ValidationError("The cart is empty.")
+        return value
+
+    def save(self, **kwargs):
+        with transaction.atomic():
+            cart_id = self.validated_data["cart_id"]
+            # print(f"Cart ID: {self.validated_data["cart_id"]}")
+            # print(f"User ID: {self.context['user_id']}")
+
+            # Get the Customer ID
+            customer = Customer.objects.get(user_id=self.context["user_id"])
+            order = Order.objects.create(customer=customer)
+
+            # Get the cart items from this cart
+            cart_items = CartItem.objects.select_related("product").filter(
+                cart_id=cart_id
+            )
+            order_items = [
+                OrderItem(
+                    order=order,
+                    product=item.product,
+                    unit_price=item.product.unit_price,
+                    quantity=item.quantity,
+                )
+                for item in cart_items
+            ]
+            OrderItem.objects.bulk_create(order_items)
+            Cart.objects.filter(pk=cart_id).delete()
+
+            order_created.send_robust(self.__class__, order=order)
+
+            return order
+
+
+class UpdateOrderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Order
+        fields = ["payment_status"]

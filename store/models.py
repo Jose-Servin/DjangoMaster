@@ -166,7 +166,7 @@ class OrderItem(models.Model):
         unit_price (Decimal): The price of the product at the time of the order.
     """
 
-    order = models.ForeignKey(Order, on_delete=models.PROTECT)
+    order = models.ForeignKey(Order, on_delete=models.PROTECT, related_name="items")
     product = models.ForeignKey(
         Product, on_delete=models.PROTECT, related_name="orderitems"
     )
